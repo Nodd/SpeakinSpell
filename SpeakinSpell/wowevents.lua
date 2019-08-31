@@ -14,16 +14,16 @@ SpeakinSpell:PrintLoading("wowevents.lua")
 function SpeakinSpell:RegisterAllEvents()
 	local funcname = "RegisterAllEvents"
 	self:DebugMsg(funcname, "entry")
-	
+
 	-- register for spellcasting events
 	-- which is our hook too know when to speak for a spell
 	-- among other things
-	
+
 	-- startup and loading events
 	--self:RegisterEvent("VARIABLES_LOADED") -- wowwiki recommends using ADDON_LOADED instead after WoW 3.0
 	-- see additional comments around these two event handler functions
 	self:RegisterEvent("ADDON_LOADED")
-	
+
 	-- combat events
 	self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 	self:RegisterEvent("UNIT_SPELLCAST_SENT") --just to get the target (but not the spellid)
@@ -37,8 +37,8 @@ function SpeakinSpell:RegisterAllEvents()
 	self:RegisterEvent("PLAYER_DEAD")
 	self:RegisterEvent("PLAYER_ALIVE")
 	self:RegisterEvent("PLAYER_UNGHOST")
-	self:RegisterEvent("UNIT_THREAT_LIST_UPDATE")
-	self:RegisterEvent("COMPANION_UPDATE")
+	--self:RegisterEvent("UNIT_THREAT_LIST_UPDATE")  -- NOT IN CLASSIC
+	--self:RegisterEvent("COMPANION_UPDATE")  -- NOT IN CLASSIC
 
 	-- enter and exit combat
 	-- NOTE: PLAYER_ENTER_COMBAT and PLAYER_LEAVE_COMBAT are not what they sound like
@@ -49,13 +49,13 @@ function SpeakinSpell:RegisterAllEvents()
 	--		see also: http://www.wowwiki.com/Events/Combat
 	self:RegisterEvent("PLAYER_REGEN_DISABLED")
 	self:RegisterEvent("PLAYER_REGEN_ENABLED")
-	
+
 	-- change zones --
 	--self:RegisterEvent("MINIMAP_ZONE_CHANGED") --for subzone changes - does not appear to be needed
 	self:RegisterEvent("ZONE_CHANGED_INDOORS") --for subzone changes inside an instance
 	self:RegisterEvent("ZONE_CHANGED_NEW_AREA") --for large scale zone changes
 	self:RegisterEvent("ZONE_CHANGED") --covers both small and large scale zone changes?
-	
+
 	-- chat events, such as receiving a whisper
 	self:RegisterEvent("CHAT_MSG_WHISPER")
 	self:RegisterEvent("CHAT_MSG_BN_WHISPER")
@@ -65,26 +65,26 @@ function SpeakinSpell:RegisterAllEvents()
 	-- detecting /follow
 	self:RegisterEvent("AUTOFOLLOW_BEGIN")
 	self:RegisterEvent("AUTOFOLLOW_END")
-	
+
 	-- Achievements
-	self:RegisterEvent("ACHIEVEMENT_EARNED")
-	self:RegisterEvent("CHAT_MSG_ACHIEVEMENT")
-	self:RegisterEvent("CHAT_MSG_GUILD_ACHIEVEMENT")
+	--self:RegisterEvent("ACHIEVEMENT_EARNED")  -- NOT IN CLASSIC
+	--self:RegisterEvent("CHAT_MSG_ACHIEVEMENT")  -- NOT IN CLASSIC
+	--self:RegisterEvent("CHAT_MSG_GUILD_ACHIEVEMENT")  -- NOT IN CLASSIC
 
 	-- NPC interaction
 	self:RegisterEvent("GOSSIP_SHOW")
-	self:RegisterEvent("BARBER_SHOP_OPEN")
-	self:RegisterEvent("BARBER_SHOP_CLOSE")
+	--self:RegisterEvent("BARBER_SHOP_OPEN")  -- NOT IN CLASSIC
+	--self:RegisterEvent("BARBER_SHOP_CLOSE")  -- NOT IN CLASSIC
 	self:RegisterEvent("MAIL_SHOW")
 	self:RegisterEvent("MERCHANT_SHOW")
 	self:RegisterEvent("QUEST_GREETING")
 	self:RegisterEvent("TAXIMAP_OPENED")
 	self:RegisterEvent("TRAINER_SHOW")
-	
+
 	-- TODO: experimental new summoning support - but how can I tell if I'm casting a summoning effect?
 	self:RegisterEvent("CONFIRM_SUMMON") -- I received a summon?
 	self:RegisterEvent("CANCEL_SUMMON") -- the summon I received has canceled or timed out?
-	
+
 	-- more miscellaneous events
 	self:RegisterEvent("PLAYER_LEVEL_UP")
 	self:RegisterEvent("RESURRECT_REQUEST")
@@ -115,7 +115,7 @@ end
 function SpeakinSpell:VARIABLES_LOADED()
 	local funcname = "VARIABLES_LOADED"
 	self:DebugMsg(funcname, "entry")
-	
+
 	--self:OnVariablesLoaded() -- redirected to SpeakinSpell.lua near OnLoad and OnInitialize
 end
 
@@ -125,7 +125,7 @@ end
 function SpeakinSpell:ADDON_LOADED(_,name)
 	local funcname = "ADDON_LOADED"
 	self:DebugMsg(funcname, "entry, name:"..tostring(name))
-	
+
 	if name == "SpeakinSpell" then
 		self:OnVariablesLoaded() -- redirected to SpeakinSpell.lua near OnLoad and OnInitialize
 	end
@@ -144,7 +144,7 @@ function SpeakinSpell:SPELL_AURA_APPLIED(timestamp, eventtype, hideCaster, srcGU
 		--self:DebugMsg(funcname, "not cast on you")
 		return
 	end
-	
+
 	-- extra parameters provided with "SPELL_" prefix
 	local spellId, spellName, spellSchool = select(1, ...)
 	-- extra parameters provided with "_AURA_APPLIED" suffix (same for _AURA_REFRESH)
@@ -155,7 +155,7 @@ function SpeakinSpell:SPELL_AURA_APPLIED(timestamp, eventtype, hideCaster, srcGU
 --	self:DebugMsgDumpString("dstName",dstName)
 --	self:DebugMsgDumpString("auraType",auraType)
 --	self:DebugMsgDumpString("spellName",spellName)
-	
+
 	local DetectedEventStub = {
 		-- event descriptors
 		name = spellName,
@@ -165,13 +165,13 @@ function SpeakinSpell:SPELL_AURA_APPLIED(timestamp, eventtype, hideCaster, srcGU
 		target = self:PlayerNameNoRealm(dstName),
 		spellid = spellId,
 	}
-	
+
 	-- buffs cast on me by someone other than me are treated differently than buffs I cast on myself
 	if not SpeakinSpell:NameIsMe(srcName) then
 		self:DebugMsg(funcname, "not cast by you")
 		DetectedEventStub.type = tostring(DetectedEventStub.type).."_FOREIGN"
 	end
-	
+
 	-- process the spell
 	-- this function is shared with the UNIT_SPELLCAST_SENT event handler
 	self:OnSpeechEvent( DetectedEventStub )
@@ -185,7 +185,7 @@ function SpeakinSpell:SPELL_AURA_REMOVED(timestamp, eventtype, hideCaster, srcGU
 		--self:DebugMsg(funcname, "not fading from you")
 		return
 	end
-	
+
 	-- extra parameters provided with "SPELL_" prefix
 	local spellId, spellName, spellSchool = select(1, ...)
 	-- extra parameters provided with "_AURA_REMOVED" suffix (same for _AURA_APPLIED)
@@ -196,7 +196,7 @@ function SpeakinSpell:SPELL_AURA_REMOVED(timestamp, eventtype, hideCaster, srcGU
 --	self:DebugMsgDumpString("dstName",dstName)
 --	self:DebugMsgDumpString("auraType",auraType)
 --	self:DebugMsgDumpString("spellName",spellName)
-	
+
 	local DetectedEventStub = {
 		-- event descriptors
 		name = spellName,
@@ -206,21 +206,21 @@ function SpeakinSpell:SPELL_AURA_REMOVED(timestamp, eventtype, hideCaster, srcGU
 		target = self:PlayerNameNoRealm(dstName),
 		spellid = spellId,
 	}
-	
+
 	-- buffs cast on me by someone other than me are treated differently than buffs I cast on myself
 	-- but I don't care about the caster for fading debuffs
 --	if not SpeakinSpell:NameIsMe(srcName) then
 --		self:DebugMsg(funcname, "not cast by you")
 --		DetectedEventStub.type = tostring(DetectedEventStub.type).."_FOREIGN"
 --	end
-	
+
 	-- process the spell
 	-- this function is shared with the UNIT_SPELLCAST_SENT event handler
 	self:OnSpeechEvent( DetectedEventStub )
 end
 
 
-function SpeakinSpell:SPELL_DAMAGE(timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...) 
+function SpeakinSpell:SPELL_DAMAGE(timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...)
 	-- extra parameters provided with "SPELL_" prefix
 	local spellId, spellName, spellSchool = select(1, ...)
 	-- extra parameters provided with "_DAMAGE" suffix
@@ -230,7 +230,7 @@ function SpeakinSpell:SPELL_DAMAGE(timestamp, eventtype, hideCaster, srcGUID, sr
 end
 
 
-function SpeakinSpell:SWING_DAMAGE(timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...) 
+function SpeakinSpell:SWING_DAMAGE(timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...)
 	-- extra parameters provided with "SWING_" prefix
 	--none
 	-- extra parameters provided with "_DAMAGE" suffix
@@ -241,7 +241,7 @@ function SpeakinSpell:SWING_DAMAGE(timestamp, eventtype, hideCaster, srcGUID, sr
 end
 
 
-function SpeakinSpell:RANGE_DAMAGE(timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...) 
+function SpeakinSpell:RANGE_DAMAGE(timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...)
 	--RANGE_DAMAGE is triggered for a hunter's bow or a mage's wand, etc.
 	-- extra parameters provided with "RANGE_" prefix
 	local spellId, spellName, spellSchool = select(1, ...)
@@ -252,7 +252,7 @@ function SpeakinSpell:RANGE_DAMAGE(timestamp, eventtype, hideCaster, srcGUID, sr
 end
 
 --[[ Not ready yet
-function SpeakinSpell:SPELL_MISSED(timestamp, eventtype, srcGUID, srcName, srcFlags, dstGUID, dstName, dstFlags, ...) 
+function SpeakinSpell:SPELL_MISSED(timestamp, eventtype, srcGUID, srcName, srcFlags, dstGUID, dstName, dstFlags, ...)
 	--We only care about blocks/parries/etc. if it happens to the player
 	--REVIEW: No, other way around... we only care if this is the player's miss, i.e. the player is the source
 	if not SpeakinSpell:NameIsMe(srcName) then
@@ -264,25 +264,25 @@ function SpeakinSpell:SPELL_MISSED(timestamp, eventtype, srcGUID, srcName, srcFl
 	local missType, amountMissed = select(4, ...)
 	--This makes the event name "%2$s was ___ed by %4$s"
 	local eventname = _G["ACTION_SPELL_MISSED_"..missType.."_FULL_TEXT_NO_SOURCE"]
-	--Replace the regexes with the words "player" and "attack". This 
+	--Replace the regexes with the words "player" and "attack". This
 	eventname = gsub(gsub(eventname, "%4$s", PLAYER),"%2$s",ATTACK)
 	--REVIEW: that looks more like a display name... what does eventname actually say now? "<spellname> was blocked by <caster>"? that doesn't seem right
 	local DetectedEventStub = {
 			type = "COMBAT", --REVIEW: this might want to be SPELL_MISS for special handling of display names
-			
+
 			--REVIEW: which of these generates the key? which *should* generate it? the one that includes the name of the spell would probably be ideal, because you only want to announce when Taunt misses, not regular damage spells (probably)
 			name		= eventname,
 			eventname	= _G[missType], -- this formats the miss type to be localized and not all caps
-			
+
 			-- I don't think this stuff is necessary, but we'll see
 			-- it's needed for "My <spellname> missed!" i.e. for a Taunt
 			spellid = spellId,
 			spellname = spellName,
-			
+
 			-- spell/ability was cast by source on dest
 			caster = srcName,
 			target = dstName,
-			
+
 			-- event-specific substitions
 			misstype = missType, --might as well support this in case you use a shared speech list
 			damage = amountMissed, --"Dang, that <spellname> would have hit for <damage>... but I missed! ack!"
@@ -291,10 +291,10 @@ function SpeakinSpell:SPELL_MISSED(timestamp, eventtype, srcGUID, srcName, srcFl
 end
 ]]
 
-function SpeakinSpell:DamageEvent(eventtype, spellId, spellName, srcName, dstName, amount, overkill, school, critical) 
-	
+function SpeakinSpell:DamageEvent(eventtype, spellId, spellName, srcName, dstName, amount, overkill, school, critical)
+
 	local funcname = "DamageEvent"
-	
+
 	-- we only care about damage done by me
 	if not SpeakinSpell:NameIsMe(srcName) then
 		return
@@ -303,22 +303,22 @@ function SpeakinSpell:DamageEvent(eventtype, spellId, spellName, srcName, dstNam
 --	self:DebugMsg(funcname, "eventtype:"..tostring(eventtype))
 --	self:DebugMsg(funcname, "overkill:"..tostring(overkill))
 --	self:DebugMsg(funcname, "critical:"..tostring(critical))
-	
+
 	if critical then
 		local DetectedEventStub = {
 			type = "COMBAT",
-			
+
 			name		= L["Critical Strike"],
 			eventname	= L["Critical Strike"],
-			
+
 			-- replace the default spellname = eventname = name logic, to provide info about the actual spell
 			spellid = spellId,
 			spellname = spellName,
-			
+
 			-- spell/ability was cast by source on dest
 			caster = self:PlayerNameNoRealm(srcName),
 			target = self:PlayerNameNoRealm(dstName),
-			
+
 			-- event-specific substitions
 			damage		= amount or 0,
 			overkill	= overkill or 0,
@@ -327,10 +327,10 @@ function SpeakinSpell:DamageEvent(eventtype, spellId, spellName, srcName, dstNam
 		-- override the display link format used by the Report Detected Speech Events diagnostic feature, to achieve this results:
 		-- self:Print( "Combat Event: Critical Strike: [Seal of Righteousness]" )
 		DetectedEventStub.displaylink = self:FormatSubs( "<eventtypeprefix><eventname>: <spelllink>", DetectedEventStub)
-		
+
 		self:OnSpeechEvent( DetectedEventStub )
 	end
-	
+
 	--TODOFUTURE: this is only going to catch MOST killing blows
 	--	if you kill something by exactly the right amount of damage, your overkill can be 0
 	--	that's extremely unlikely, but for perfection we could use UNIT_DIED or PARTY_KILL
@@ -339,18 +339,18 @@ function SpeakinSpell:DamageEvent(eventtype, spellId, spellName, srcName, dstNam
 	if overkill and overkill > 0 then
 		local DetectedEventStub = {
 			type = "COMBAT",
-			
+
 			name		= L["Killing Blow"],
 			eventname	= L["Killing Blow"],
-			
+
 			-- replace the default spellname = eventname = name logic, to provide info about the actual spell
 			spellid = spellId,
 			spellname = spellName,
-			
+
 			-- spell/ability was cast by source on dest
 			caster = self:PlayerNameNoRealm(srcName),
 			target = self:PlayerNameNoRealm(dstName),
-			
+
 			-- event-specific substitions
 			damage		= amount or 0,
 			overkill	= overkill or 0,
@@ -359,7 +359,7 @@ function SpeakinSpell:DamageEvent(eventtype, spellId, spellName, srcName, dstNam
 		-- override the display link format used by the Report Detected Speech Events diagnostic feature, to achieve this results:
 		-- self:Print( "Combat Event: Critical Strike: [Seal of Righteousness]" )
 		DetectedEventStub.displaylink = self:FormatSubs( "<eventtypeprefix><eventname>: <spelllink>", DetectedEventStub)
-		
+
 		self:OnSpeechEvent( DetectedEventStub )
 	end
 end
@@ -370,12 +370,12 @@ end
 SpeakinSpell.CombatLogEvents = {
 	["SPELL_AURA_APPLIED"] = function(  timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...)
 		-- buff gains
-		SpeakinSpell:SPELL_AURA_APPLIED(timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...) 
+		SpeakinSpell:SPELL_AURA_APPLIED(timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...)
 	end,
 	["SPELL_AURA_REFRESH"] = function(  timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...)
 		-- buff timer refreshed (Recast on you without wearing off all the way first)
 		-- NOTE: the function is called SPELL_AURA_APPLIED because it's shared, but still pass eventtype=SPELL_AURA_REFRESH
-		SpeakinSpell:SPELL_AURA_APPLIED(timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...) 
+		SpeakinSpell:SPELL_AURA_APPLIED(timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...)
 	end,
 	["SPELL_AURA_REMOVED"] = function(  timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...)
 		-- buff or debuff is expiring
@@ -383,22 +383,22 @@ SpeakinSpell.CombatLogEvents = {
 	end,
 	["SPELL_DAMAGE"] = function(  timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...)
 		-- any spell or other special ability landed a hit (or crit) to deal damage
-		SpeakinSpell:SPELL_DAMAGE( timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...) 
+		SpeakinSpell:SPELL_DAMAGE( timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...)
 	end,
 	["SWING_DAMAGE"] = function(  timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...)
 		-- melee swings (white hits)
-		SpeakinSpell:SWING_DAMAGE( timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...) 
+		SpeakinSpell:SWING_DAMAGE( timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...)
 	end,
 	["RANGE_DAMAGE"] = function(  timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...)
 		-- white hits with a ranged attack, such as a hunter's bow, or a mage's wand, etc.
-		SpeakinSpell:RANGE_DAMAGE( timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...) 
+		SpeakinSpell:RANGE_DAMAGE( timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...)
 	end,
-  -- hoping this will pick up channeled summon events. 
+  -- hoping this will pick up channeled summon events.
    ["SPELL_SUMMON"] = function(  timestamp, eventtype, hideCaster, srcGUID, srcName, srcFlags, srcRaidFlags, dstGUID, dstName, dstFlags, dstRaidFlags, ...)
    end,
 --	["SPELL_MISSED"] = function(  timestamp, eventtype, srcGUID, srcName, srcFlags, dstGUID, dstName, dstFlags, ...)
 		-- Special ability misses, is blocked, absorbed, parried, etc,
---		SpeakinSpell:SPELL_MISSED( timestamp, eventtype, srcGUID, srcName, srcFlags, dstGUID, dstName, dstFlags, ...) 
+--		SpeakinSpell:SPELL_MISSED( timestamp, eventtype, srcGUID, srcName, srcFlags, dstGUID, dstName, dstFlags, ...)
 --	end,
 }
 
@@ -420,7 +420,7 @@ function SpeakinSpell:COMBAT_LOG_EVENT_UNFILTERED()
 		overflowTable[i] = parameterTable[i+11]
 	end
 
-	
+
 	local func = SpeakinSpell.CombatLogEvents[eventtype]
 	if func then
 		func(unpack(parameterTable))
@@ -477,7 +477,7 @@ end
 
 --[[
 "COMPANION_UPDATE"
-<Added in Patch 3.0 (WotLK)> 
+<Added in Patch 3.0 (WotLK)>
 Added to SpeakinSpell in SS v5.0.4.02
 Copied from wowwiki/wowpedia (text is identical on both sites)
 
@@ -488,11 +488,11 @@ Copied from wowwiki/wowpedia (text is identical on both sites)
 		- You, or anyone within range, summons or dismisses a critter
 		- You, or anyone within range, mounts or dismounts
 		- Someone enters range with a critter summoned
-		- Someone enters range while mounted 
+		- Someone enters range while mounted
 
 	"Range" appears to be at least 40 yards. If you are in a major city, expect this event to fire constantly.
 
-For SpeakinSpell, we really only care about the cases where You, the player, 
+For SpeakinSpell, we really only care about the cases where You, the player,
 summon or dismiss a critter or mount
 
 We do NOT care about other players entering/exiting range with their mounts/critters
@@ -507,7 +507,7 @@ function SpeakinSpell:COMPANION_UPDATE(_, CritterOrMount)
 	local funcname = "COMPANION_UPDATE"
 	local OldCompanion = self.RuntimeData.ActiveCompanions[CritterOrMount]
 	local NewCompanion, NewSpellID = self:GetActiveCompanion(CritterOrMount)
-	
+
 	self:DebugMsg(funcname, "CritterOrMount="..tostring(CritterOrMount))
 	self:DebugMsg(funcname, "OldCompanion="..tostring(OldCompanion))
 	self:DebugMsg(funcname, "NewCompanion="..tostring(NewCompanion))
@@ -519,10 +519,10 @@ function SpeakinSpell:COMPANION_UPDATE(_, CritterOrMount)
 		self:DebugMsg(funcname, "COMPANION_UPDATE ignored because NewCompanion == OldCompanion")
 		return
 	end
-	
+
 	-- remember the new companion for future reference, so we know when it changes
 	self.RuntimeData.ActiveCompanions[CritterOrMount] = NewCompanion
-	
+
 	--NOTE: myrealm result from UnitName("player") is always nil
 	local myname, myrealm = UnitName("player")
 	local DetectedEventStub = {
@@ -535,14 +535,14 @@ function SpeakinSpell:COMPANION_UPDATE(_, CritterOrMount)
 		target = (NewCompanion or OldCompanion), -- users may find this value more intuitive than UnitName("player"),
 
 		-- EVENT-SPECIFIC DATA FOR SUBSTITUTIONS
-		-- override the spellname with that of the applicable companion 
+		-- override the spellname with that of the applicable companion
 		-- either the one which was summoned (new) or dismissed (old)
 		spellname = (NewCompanion or OldCompanion),
 		spellid = (NewSpellID or self.RuntimeData.LastKnownSpellId),
 		-- the isCOMPANION_UPDATE is used to override the behavior of <DisplayLink>
 		isCOMPANION_UPDATE = true,
 	}
-	
+
 	-- figure out which event just happened
 	-- this 'name' will become the event trigger key
 	if "MOUNT" == CritterOrMount then
@@ -578,7 +578,7 @@ function SpeakinSpell:COMPANION_UPDATE(_, CritterOrMount)
 		self:DebugMsg(funcname, "Unexpected CritterOrMount="..tostring(CritterOrMount))
 		return
 	end
-	
+
 	self:OnSpeechEvent( DetectedEventStub )
 end
 
@@ -830,12 +830,12 @@ function SpeakinSpell:UNIT_SPELLCAST_SENT(event, caster, target, castid, spellid
 	local spellname = GetSpellInfo(spellid)
 	self.RuntimeData.LastSpellcastSentTarget = target
 	self:DebugMsg("UNIT_SPELLCAST_SENT", tostring(spellname).." target is "..tostring(target))
-	
+
 	-- we're not firing the standard handler here because we don't have the spellid yet
 	-- we might also skip ahead to other events
 	-- because the API notifications are somewhat inconsistent depending on the in-game results
 	-- so merely store some information about this pending spellcast that the player tried to send
-	
+
 	-- Deleting this object is a little tricky
 	-- Based on the notes above, we can safely delete this on all FAILED, STOP, and CHANNEL_STOP events
 	-- TODO: That leaves one case for instant casts that fire SENT -> SUCCEEDED
@@ -910,7 +910,7 @@ end
 function SpeakinSpell:UNIT_SPELLCAST_SUCCEEDED(event, caster, castid, spellid)
 	local spellname = GetSpellInfo(spellid)
 	self:OnSpellcastEvent(event, caster, spellname, spellid)
-	
+
 	-- if this is an instant cast, we need to clean up our pending sent object, or we'll leak memory
 	-- but if it's not an instant cast, then we need to keep this pending sent info
 	-- Blizzard Fail: castTime is 0 for channeled spells
@@ -918,7 +918,7 @@ function SpeakinSpell:UNIT_SPELLCAST_SUCCEEDED(event, caster, castid, spellid)
 	-- so this would delete information prematurely
 	--TODO: we have a small memory leak here still, and incorrect comments in SENT
 	--[[
-	local name, rank, icon, cost, isFunnel, powerType, castTime, minRange, maxRange 
+	local name, rank, icon, cost, isFunnel, powerType, castTime, minRange, maxRange
 		= GetSpellInfo(spellid)
 
 	if (castTime == 0) then
@@ -932,21 +932,21 @@ end
 function SpeakinSpell:OnSpellcastEvent(event, caster, spellname, spellid)
 --function SpeakinSpell:OnSpellcastEvent(event, caster, spellname, spellrank, spellid)
 	local funcname = "OnSpellcastEvent"
-	
+
 	-- ignore events that don't originate with the player or pet
 	-- TODOFUTURE: we will allow announcements for other people's spell casting
 	if caster ~= "player" and caster ~= "pet" then
 		--self:DebugMsg(funcname,"caster is not the player or pet")
 		return
 	end
-	
+
 	local PendingSent = PendingSpellcastsSent[spellname]
 	local target = ""
-	
+
 	if PendingSent then
 		-- the true target was known to the SENT event
 		target = PendingSent.target
-		
+
 		-- check that we announced "when I start casting"
 		if not PendingSent.AnnouncedStart then
 			if event == "UNIT_SPELLCAST_START" then
@@ -970,7 +970,7 @@ function SpeakinSpell:OnSpellcastEvent(event, caster, spellname, spellid)
 		end
 	end
 	--else the target is unknown
-	
+
 --	self:DebugMsg(funcname,"(caster, spellname, spellrank, spellid)")
 	self:DebugMsgDumpString("event",event)
 --	self:DebugMsgDumpString("caster",caster)
@@ -978,7 +978,7 @@ function SpeakinSpell:OnSpellcastEvent(event, caster, spellname, spellid)
 --	self:DebugMsgDumpString("spellrank",spellrank)
 	self:DebugMsgDumpString("spellid",spellid)
 	self:DebugMsgDumpString("target",target)
-	
+
 	-- setup basic information about the speech event
 	local DetectedEventStub = {
 		-- event descriptors
@@ -1002,7 +1002,7 @@ function SpeakinSpell:OnSpellcastEvent(event, caster, spellname, spellid)
 		DetectedEventStub.type = "UNIT_SPELLCAST_SENT"
 	end
 
-	-- modify values for pet events	
+	-- modify values for pet events
 	-- NOTE: UNIT_SPELLCAST_SUCCEEDED appears to be the only pet event that actually occurs in WoW 3.3.5
 	if caster == "player" then
 		--NOTE: myrealm result from UnitName("player") is always nil
@@ -1013,11 +1013,11 @@ function SpeakinSpell:OnSpellcastEvent(event, caster, spellname, spellid)
 		local petname, petrealm = UnitName("pet")
 		DetectedEventStub.caster = petname
 	end
-	
+
 	-- Remember the last spell ID that we saw
 	-- this assists COMPANION_UPDATE
 	self.RuntimeData.LastKnownSpellId = spellid
-	
+
 	-- SPEAK!
 	self:OnSpeechEvent( DetectedEventStub )
 end
@@ -1038,7 +1038,7 @@ function SpeakinSpell:PLAYER_DEAD(event)
 		return
 	end
 	self.RuntimeData.dead = true
-	
+
 	--NOTE: myrealm result from UnitName("player") is always nil
 	local myname, myrealm = UnitName("player")
 	local DetectedEventStub = {
@@ -1061,9 +1061,9 @@ PLAYER_ALIVE
 Fired when the player:
 
     * Releases from death to a graveyard.
-    * Accepts a resurrect before releasing their spirit. 
+    * Accepts a resurrect before releasing their spirit.
 
-Does not fire when the player is alive after being a ghost. PLAYER_UNGHOST is triggered in that case. 
+Does not fire when the player is alive after being a ghost. PLAYER_UNGHOST is triggered in that case.
 
 PLAYER_UNGHOST
 Fired when the player is alive after being a ghost. Called after one of:
@@ -1071,9 +1071,9 @@ Fired when the player is alive after being a ghost. Called after one of:
     * Performing a successful corpse run and the player accepts the 'Resurrect Now' box.
     * Accepting a resurrect from another player after releasing from a death.
     * Zoning into an instance where the player is dead.
-    * When the player accept a resurrect from a Spirit Healer. 
+    * When the player accept a resurrect from a Spirit Healer.
 
-The player is alive when this event happens. Does not fire when the player is resurrected before releasing. PLAYER_ALIVE is triggered in that case. 
+The player is alive when this event happens. Does not fire when the player is resurrected before releasing. PLAYER_ALIVE is triggered in that case.
 --]]
 
 -- TODOFUTURE: Combat Event: I'm Alive Again
@@ -1118,7 +1118,7 @@ function SpeakinSpell:PLAYER_REGEN_DISABLED()
 		-- event-specific data for substitutions
 		-- None
 	}
-	self:OnSpeechEvent( DetectedEventStub ) 
+	self:OnSpeechEvent( DetectedEventStub )
 end
 
 
@@ -1128,7 +1128,7 @@ function SpeakinSpell:PLAYER_REGEN_ENABLED()
 	-- update combat status flags for "limit once per combat" feature
 	self.RuntimeData.InCombat = false
 	self:ResetOncePerCombatFlags()
-	
+
 	-- we can't have aggro on the current target now that we're out of combat
 	-- if we deselected our target before exiting combat, the UNIT_THREAT_LIST_UPDATE won't tell us that we lost aggro
 	self.RuntimeData.hasAggro = false
@@ -1142,7 +1142,7 @@ function SpeakinSpell:PLAYER_REGEN_ENABLED()
 		-- event-specific data for substitutions
 		-- None
 	}
-	self:OnSpeechEvent( DetectedEventStub ) 
+	self:OnSpeechEvent( DetectedEventStub )
 end
 
 
@@ -1168,12 +1168,12 @@ function SpeakinSpell:OnZoneChange(minoronly)
 		-- event-specific data for substitutions
 		-- None
 	}
-	
+
 	if minoronly then
 		DetectedEventStub.name = L["Changed Sub-Zone"]
 	end
-	
-	self:OnSpeechEvent( DetectedEventStub ) 
+
+	self:OnSpeechEvent( DetectedEventStub )
 end
 
 
@@ -1182,7 +1182,7 @@ end
 function SpeakinSpell:MINIMAP_ZONE_CHANGED()
 	local funcname = "MINIMAP_ZONE_CHANGED"
 	self:DebugMsg(funcname, "entry")
-	
+
 	self:OnZoneChange(true)
 end
 --]]
@@ -1191,7 +1191,7 @@ end
 function SpeakinSpell:ZONE_CHANGED_INDOORS()
 	local funcname = "ZONE_CHANGED_INDOORS"
 	self:DebugMsg(funcname, "entry")
-	
+
 	self:OnZoneChange(true)
 end
 
@@ -1199,7 +1199,7 @@ end
 function SpeakinSpell:ZONE_CHANGED_NEW_AREA()
 	local funcname = "ZONE_CHANGED_NEW_AREA"
 	self:DebugMsg(funcname, "entry")
-	
+
 	self:OnZoneChange(false)
 end
 
@@ -1207,7 +1207,7 @@ end
 function SpeakinSpell:ZONE_CHANGED()
 	local funcname = "ZONE_CHANGED"
 	self:DebugMsg(funcname, "entry")
-	
+
 	self:OnZoneChange(true)
 end
 
@@ -1220,28 +1220,28 @@ end
 --[[
 "CHAT_MSG_WHISPER"
 	Category: Communication
-  	
+
 
 Fired when a whisper is received from another player.
 
 The rest of the arguments appear to be nil
 
-arg1 
-    Message received 
-arg2 
-    Author 
-arg3 
-    Language (or nil if universal, like messages from GM) (always seems to be an empty string; argument may have been kicked because whispering in non-standard language doesn't seem to be possible [any more?]) 
-arg6 
-    status (like "DND" or "GM") 
-arg7 
-    (number) message id (for reporting spam purposes?) (default: 0) 
-arg8 
-    (number) unknown (default: 0) 
+arg1
+    Message received
+arg2
+    Author
+arg3
+    Language (or nil if universal, like messages from GM) (always seems to be an empty string; argument may have been kicked because whispering in non-standard language doesn't seem to be possible [any more?])
+arg6
+    status (like "DND" or "GM")
+arg7
+    (number) message id (for reporting spam purposes?) (default: 0)
+arg8
+    (number) unknown (default: 0)
 --]]
 function SpeakinSpell:CHAT_MSG_WHISPER(event, msg, author, language, status, id, ...)
 	-- Chat Event: Whispered While In-Combat
-	if	self.RuntimeData.InCombat			and 
+	if	self.RuntimeData.InCombat			and
 		type(author) == "string"			and
 		not SpeakinSpell:NameIsMe(author)	then
 
@@ -1258,7 +1258,7 @@ function SpeakinSpell:CHAT_MSG_WHISPER(event, msg, author, language, status, id,
 		}
 		self:OnSpeechEvent( DetectedEventStub )
 	end
-	
+
 	-- TODOFUTURE: more whisper-response based features could go here
 	--	allow other people to trigger /ss commands by whispering to you, similar to auctioneer's whisper activated price lookup feature
 	--	auto-advertise in response to "what addon is that?"
@@ -1275,15 +1275,15 @@ end
 --[[
 "CHAT_MSG_GUILD"
 	Category: Communication,Guild
-  	
+
 Fired when a message is sent or received in the Guild channel.
 
-arg1 
-    Message that was sent 
-arg2 
-    Author 
-arg3 
-    Language that the message was sent in 
+arg1
+    Message that was sent
+arg2
+    Author
+arg3
+    Language that the message was sent in
 --]]
 function SpeakinSpell:CHAT_MSG_GUILD(event, message, sender, ...)
 	-- "Chat Event: A Guild Member said 'ding'"
@@ -1332,7 +1332,7 @@ end
 function SpeakinSpell:AUTOFOLLOW_BEGIN(event, unit)
 --	local funcname = "AUTOFOLLOW_BEGIN"
 --	self:DebugMsg(funcname, "unit:"..tostring(unit))
-	
+
 	self.RuntimeData.AutoFollowTarget = unit -- saved for AUTOFOLLOW_END
 	local DetectedEventStub = {
 		type = "EVENT",
@@ -1346,7 +1346,7 @@ end
 function SpeakinSpell:AUTOFOLLOW_END(event, ...)
 --	local funcname = "AUTOFOLLOW_END"
 --	self:DebugMsg(funcname, "AutoFollowTarget:"..tostring(self.RuntimeData.AutoFollowTarget))
-	
+
 	if self.RuntimeData.AutoFollowTarget then
 		local DetectedEventStub = {
 			type = "EVENT",
@@ -1371,7 +1371,7 @@ function SpeakinSpell:ACHIEVEMENT_EARNED(event, AchievementID)
 	local DetectedEventStub = {
 		type = "ACHIEVEMENT",
 		name = COMBATLOG_FILTER_STRING_ME, -- DisplayName = "Achievement Earned by <name>"
-		-- NOTE: we don't want the name of this achievement to be in the type or name of this stub, defined above, 
+		-- NOTE: we don't want the name of this achievement to be in the type or name of this stub, defined above,
 		--		because we want ALL differently-named achievements to share the same speech event settings
 		--		so we'll use an event-specific custom data name to support substitution the name of this achievement in the speech
 		achievement = Name,
@@ -1396,15 +1396,15 @@ from wowwiki.com, plus added comments to fill in missing details
 
 "CHAT_MSG_ACHIEVEMENT"
 	Category: Communication,Guild,Achievements
-  	
+
 
 Fired when a player in your vicinity completes an achievement.
 
 arg1 (ChatMessage)
     The full body of the broadcast message. ("%s has earched the achievement [clickable link]")
 arg2, arg5 (EarnedBy)
-    The name of player who has just completed the achievement. 
-arg7, arg8 
+    The name of player who has just completed the achievement.
+arg7, arg8
     Some integer. (Ris: the achievement ID???)
 --]]
 function SpeakinSpell:CHAT_MSG_ACHIEVEMENT(event, ChatMessage, EarnedBy, ...)
@@ -1417,12 +1417,12 @@ function SpeakinSpell:CHAT_MSG_ACHIEVEMENT(event, ChatMessage, EarnedBy, ...)
 	local DetectedEventStub = {
 		type = "ACHIEVEMENT",
 		name = L["Someone Nearby"], -- DisplayName = "Achievement Earned by <name>"
-		-- NOTE: we don't want the name of this achievement to be in the type or name of this stub, defined above, 
+		-- NOTE: we don't want the name of this achievement to be in the type or name of this stub, defined above,
 		--		because we want ALL differently-named achievements to share the same speech event settings
 		--		so we'll use an event-specific custom data name to support substitution the name of this achievement in the speech
 		--TODOFUTURE: ? parse this for the achievement name or link instead of the full chat message text ?
 		--	for now, providing <achievement> and <desc> as both the complete message, for similarity to ACHIEVEMENT_EARNED
-		achievement = achievement, 
+		achievement = achievement,
 		desc = achievement,
 		spelllink = achievement,
 		-- and standard meaning for target and caster OF THE EVENT (the player who earned the achievement)
@@ -1436,15 +1436,15 @@ end
 --[[
 "CHAT_MSG_GUILD_ACHIEVEMENT" (same as CHAT_MSG_ACHIEVEMENT)
 	Category: Communication,Guild,Achievements
-  	
+
 Fired when a guild member completes an achievement.
 
-arg1 
-    The full body of the broadcast message. 
-arg2, arg5 
-    The name of player who has just completed the achievement. 
-arg7, arg8, arg11 
-    Some integer that (but not the achievement ID, or the total number of achievement points for the player; this seems to increment if two consecutive achievements are posted (needs to be verified)). 
+arg1
+    The full body of the broadcast message.
+arg2, arg5
+    The name of player who has just completed the achievement.
+arg7, arg8, arg11
+    Some integer that (but not the achievement ID, or the total number of achievement points for the player; this seems to increment if two consecutive achievements are posted (needs to be verified)).
 --]]
 function SpeakinSpell:CHAT_MSG_GUILD_ACHIEVEMENT(event, ChatMessage, EarnedBy, ...)
 	if SpeakinSpell:NameIsMe(EarnedBy) then -- don't congratulate myself (we DO get this message for our own achievements)
@@ -1455,12 +1455,12 @@ function SpeakinSpell:CHAT_MSG_GUILD_ACHIEVEMENT(event, ChatMessage, EarnedBy, .
 	local DetectedEventStub = {
 		type = "ACHIEVEMENT",
 		name = L["a Guild Member"], -- DisplayName = "Achievement Earned by <name>"
-		-- NOTE: we don't want the name of this achievement to be in the type or name of this stub, defined above, 
+		-- NOTE: we don't want the name of this achievement to be in the type or name of this stub, defined above,
 		--		because we want ALL differently-named achievements to share the same speech event settings
 		--		so we'll use an event-specific custom data name to support substitution the name of this achievement in the speech
 		--TODOFUTURE: ? parse this for the achievement name or link instead of the full chat message text ?
 		--	for now, providing <achievement> and <desc> as both the complete message, for similarity to ACHIEVEMENT_EARNED
-		achievement = achievement, 
+		achievement = achievement,
 		desc = achievement,
 		spelllink = achievement,
 		-- and standard meaning for target and caster OF THE EVENT (the player who earned the achievement)
@@ -1575,20 +1575,20 @@ end
 --[[
 "PLAYER_LEVEL_UP"
 	Category: Player
-  	
+
 
 Fired when a player levels up.
 
-arg1 
-    New player level. Note that UnitLevel("player") will most likely return an incorrect value when called in this event handler or shortly after, so use this value. 
-arg2 
-    Hit points gained from leveling. 
-arg3 
-    Mana points gained from leveling. 
-arg4 
-    Talent points gained from leveling. Should always be 1 unless the player is between levels 1 to 9. 
-arg5 - arg9 
-    Attribute score increases from leveling. Strength (5) / Agility (6) / Stamina (7) / Intellect (8) / Spirit (9). 
+arg1
+    New player level. Note that UnitLevel("player") will most likely return an incorrect value when called in this event handler or shortly after, so use this value.
+arg2
+    Hit points gained from leveling.
+arg3
+    Mana points gained from leveling.
+arg4
+    Talent points gained from leveling. Should always be 1 unless the player is between levels 1 to 9.
+arg5 - arg9
+    Attribute score increases from leveling. Strength (5) / Agility (6) / Stamina (7) / Intellect (8) / Spirit (9).
 --]]
 function SpeakinSpell:PLAYER_LEVEL_UP(event, ...)
 	local DetectedEventStub = {
@@ -1602,11 +1602,11 @@ end
 --[[
 "RESURRECT_REQUEST"
 	Category: Death
-  	
+
 Fired when another player resurrects you
 
-arg1 
-    player name 
+arg1
+    player name
 --]]
 function SpeakinSpell:RESURRECT_REQUEST(event, caster)
 	--NOTE: myrealm result from UnitName("player") is always nil
@@ -1627,7 +1627,7 @@ function SpeakinSpell:TRADE_SHOW()
 		name = L["Open Trade Window"],
 	}
 	self:OnSpeechEvent( DetectedEventStub )
-   
+
 end
 
  function SpeakinSpell:UPDATE_MOUSEOVER_UNIT()

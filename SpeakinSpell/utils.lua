@@ -36,13 +36,13 @@ function SpeakinSpell:AddTable(Dest, Source)
 		Dest = {}
 	end
 	assert( type(Dest) == "table" )
-	
+
 	-- if there's no source, then there's nothing to add
 	if Source == nil then
 		-- nothing to add
 		return Dest
 	end
-	
+
 	-- add the contents of Source, one item at a time
 	for k,v in pairs(Source) do
 		-- dig into embedded tables to add those too, not just create references
@@ -53,7 +53,7 @@ function SpeakinSpell:AddTable(Dest, Source)
 			Dest[k] = v
 		end
 	end
-	
+
 	return Dest
 end
 
@@ -106,7 +106,7 @@ function SpeakinSpell:SizeTable( t )
 	if not t then
 		return 0
 	end
-	
+
 	local size = 0
 	for _,_ in pairs(t) do
 		size = size + 1
@@ -151,7 +151,7 @@ function SpeakinSpell:PlayerNameNoRealm( NameWithRealm )
     if NameWithRealm == nil or NameWithRealm == "" then
         return NameWithRealm
     end
-    
+
 	local index = string.find( NameWithRealm, "-" )
 	if (index and (index >= 0)) then
 		-- found the delimiter between player name and realm name
@@ -171,14 +171,14 @@ function SpeakinSpell:NameIsMe( InputName )
 	--NOTE: myrealm result from UnitName("player") is always nil
 	local player, myrealm = UnitName("player")
 	local realm = GetRealmName()
-		
+
 	if InputName == player then
 		return true
 	end
 	if InputName == player.."-"..realm then
 		return true
 	end
-	
+
 	return false
 end
 
@@ -189,27 +189,27 @@ function SpeakinSpell:GetDefaultTarget(ShowDebugMsg)
 		if ShowDebugMsg then self:DebugMsg(nil,"<target> is unknown, using <selected>:"..tostring(target)) end
 		return target
 	end
-	
+
 	-- nobody is selected, try focus
 	target, targetrealm = UnitName("focus")
 	if target then
 		if ShowDebugMsg then self:DebugMsg(nil,"<target> is unknown, using <focus>:"..tostring(target)) end
 		return target
 	end
-	
+
 	-- nobody on focus, try mouseover
 	target, targetrealm = UnitName("mouseover")
 	if target then
 		if ShowDebugMsg then self:DebugMsg(nil,"<target> is unknown, using <mouseover>:"..tostring(target)) end
 		return target
 	end
-	
+
 	-- assume self-cast ability
 	-- NO this doesn't work out very well in practice (especially battle cries / entering combat)
 	--NOTE: myrealm result from UnitName("player") is always nil
 --	target, myrealm = UnitName("player")
 --	if ShowDebugMsg then self:DebugMsg(nil,"<target> is unknown, using <player>:"..tostring(target)) end
-	
+
 	return target
 end
 
@@ -221,13 +221,13 @@ end
 --		if a type filter is NOT in effect, include the event type in the display name
 --
 local g_DefaultFormat = {
-	typefilter = "*ALL", 
-	HighlightFilterText = false, 
+	typefilter = "*ALL",
+	HighlightFilterText = false,
 	BaseColor = "|r",
 }
 function SpeakinSpell:FormatDisplayName( de, DisplayNameFormat )
 	local funcname = "FormatDisplayName"
-	
+
 	local Format = self:CopyTable( DisplayNameFormat )
 	self:ValidateObject( Format, g_DefaultFormat )
 
@@ -256,16 +256,16 @@ function SpeakinSpell:FormatDisplayName( de, DisplayNameFormat )
 			return self:FormatSubs(L["<basecolor><colormatchedname>"],subs)
 		end
 	end
-	
+
 	return subs.colormatchedname
 end
 
 
 -- from UnitID info on wowwiki:
--- player name 
---    As returned by UnitName, GetGuildRosterInfo, GetFriendInfo, COMBAT LOG EVENT, etc. 
---	This must be spelled exactly AND WILL BE INVALID IF THE NAMED PLAYER IS NOT A PART OF YOUR PARTY OR RAID. 
---	As with all other UnitIDs, it is not case sensitive. 
+-- player name
+--    As returned by UnitName, GetGuildRosterInfo, GetFriendInfo, COMBAT LOG EVENT, etc.
+--	This must be spelled exactly AND WILL BE INVALID IF THE NAMED PLAYER IS NOT A PART OF YOUR PARTY OR RAID.
+--	As with all other UnitIDs, it is not case sensitive.
 --	This creates a problem for getting race/class info of players outside the party
 --	so we try to get a universally-allowed unitid like target if we have them selected
 --	Try all of these UnitNames until we get a match, then return it
@@ -276,13 +276,13 @@ local NameToUnitIDSearchList = {
 "focus",     --verified works for UnitRace/UnitClass in 3.3.5
 "mouseover", --verified works for UnitRace/UnitClass in 3.3.5
 -- TEST: the rest are untested for UnitRace/UnitClass
--- "arenaN" Opposing arena member with index N (1,2,3,4 or 5). 
+-- "arenaN" Opposing arena member with index N (1,2,3,4 or 5).
 "arena1",
 "arena2",
 "arena3",
 "arena4",
 "arena5",
--- "bossN" The active bosses of the current encounter if available N (1,2,3 or 4). (Added in 3.3.0) 
+-- "bossN" The active bosses of the current encounter if available N (1,2,3 or 4). (Added in 3.3.0)
 "boss1",
 "boss2",
 "boss3",
@@ -298,7 +298,7 @@ function SpeakinSpell:NameToUnitID( name )
 			return unitId
 		end
 	end
-	
+
 	return nil
 end
 
@@ -308,13 +308,13 @@ function SpeakinSpell:TitleCase(s)
 	local rest = string.sub(s,2,-1)
 
 	first = string.upper(first)
-	
+
 	rest = string.gsub(rest, " %a",
-		function(match) 
+		function(match)
 			return string.upper(match)
 		end
 	)
-	
+
 	local result = tostring(first)..tostring(rest)
 	return result
 end
@@ -337,10 +337,10 @@ function SpeakinSpell:ContainsWholeWord(s, word)
 	-- and tostring() for safety against lua errors
 	local search = strlower( tostring(s) )
 	local wordlower = strlower( tostring(word) )
-	
+
 	-- use gsub to remove all whole words which are not 'word'
 	-- "(%a+)" matches all whole words
-	-- TODOFUTURE: this whole function can probably be achieved with a more powerful regular expression 
+	-- TODOFUTURE: this whole function can probably be achieved with a more powerful regular expression
 	--		passed to string.match, containing the word we're looking for, and some regular expression syntax
 	--		it would probably run faster
 	local found = string.gsub( search, "(%a+)", function(match)
@@ -349,7 +349,7 @@ function SpeakinSpell:ContainsWholeWord(s, word)
 		end
 		return ""
 	end)
-	
+
 	-- 'found' now contains only whole words which match 'word'
 	-- and white space
 	local ndx = string.find(found, wordlower)
@@ -363,7 +363,7 @@ end
 
 function SpeakinSpell:IsInWorldPVPBattle()
 	--only applies to active battles
-	
+
 	-- we only care if a battle is in progress
 	-- if we're in WG for VOA PVE and the battle is over, switch to raid settings
 	-- same for Tol Barad, and as of WoW 4.0.6, they share the same API: GetWorldPVPAreaInfo
@@ -381,13 +381,13 @@ end
 
 function SpeakinSpell:GetRandomTableEntry( t, last )
 	if not t then return nil end
-	
+
 	local max = #(t)
 	if not (max >= 1) then return nil end
-	
+
 	local n = math.random(1, max);
 	local sel = t[n]
-	
+
 	-- avoid repeating the same message we used last time
 	-- unless there's only one in the list
 	-- or we don't have a 'last'
@@ -397,18 +397,18 @@ function SpeakinSpell:GetRandomTableEntry( t, last )
 			sel = t[n]
 		end
 	end
-	
+
 	return sel
 end
 
- -- Note Added this fuction to just do a boolen check for if we are in an 
- -- instance, usefull for when we want to sup one group type for another because 
- -- while your in a party, raid, or BG  you can also be in an instance 
+ -- Note Added this fuction to just do a boolen check for if we are in an
+ -- instance, usefull for when we want to sup one group type for another because
+ -- while your in a party, raid, or BG  you can also be in an instance
 
 function SpeakinSpell:CheckForInstance()
 	local isInstance, instanceType = IsInInstance()
 	return isInstance
-end 
+end
 
 function SpeakinSpell:GetScenarioKey()
 	local funcname = "GetScenarioKey"
@@ -453,7 +453,7 @@ function SpeakinSpell:GetRacialLanguage()
 	-- the languages are ordered differently for every race
 	-- return GetLanguageByIndex( 2 ) -- doesn't work as simply as that
 	local funcname = "GetRacialLanguage"
-	
+
 	-- following is Harmoniii's logic table for finding the racial language
 	-- adapted to remove redundant code
 	local NumLanguages = GetNumLanguages()
@@ -461,11 +461,11 @@ function SpeakinSpell:GetRacialLanguage()
 	local Race = select(2, UnitRace ("player"))
 	local Faction = UnitFactionGroup("player")
 	local i = 0 -- find this index passed to GetLanguageByIndex at the end
-	if (NumLanguages == 2) then   
+	if (NumLanguages == 2) then
 		if Faction == "Horde" then
 			i = 2
 		else -- Alliance
-			if (GetLanguageByIndex(2) == Common) then  
+			if (GetLanguageByIndex(2) == Common) then
 				-- alliance elves and dwarves.
 				i = 1
 			else
@@ -476,7 +476,7 @@ function SpeakinSpell:GetRacialLanguage()
 	elseif (NumLanguages == 3) then -- Demon Hunter
 		if Faction == "Horde" then -- Horde
 			i = 3
-		else 
+		else
 			i = 1
 		end
 	elseif (NumLanguages == 5) then -- alliance non-pandaren mage
@@ -490,9 +490,9 @@ function SpeakinSpell:GetRacialLanguage()
 			i = 5
 		else -- impossible, only if forgot something
 			self:DebugMsg(funcname, string.format("Unexpected combination of NumLanguages=%d and Race=%s", NumLanguages, Race))
-			i = 3 
+			i = 3
 		end
-	elseif (NumLanguages == 6) then   
+	elseif (NumLanguages == 6) then
 		if Faction == "Horde" then -- Horde non-pandaren mages
 			if Race == "Tauren" then
 				i = 2
@@ -538,7 +538,7 @@ function SpeakinSpell:GetRacialLanguage()
 	-- for example a night elf will have i=1, languageIndex=7, languageName=Darnassian
 	local languageName, languageIndex = GetLanguageByIndex(i)
 	self:DebugMsg(funcname, string.format("i=%d, languageIndex=%d, languageName=%s", i, languageIndex, languageName))
-	return languageName, languageIndex 
+	return languageName, languageIndex
 end
 
 -- TehAkarf
@@ -546,9 +546,9 @@ end
 -- Returns languageName, languageIndex
 function SpeakinSpell:GetClassLanguage()
 	-- return GetLanguageByIndex( 2 )
-	-- When the index is equal to 2, it returns the class language for the Demon Hunter. 
+	-- When the index is equal to 2, it returns the class language for the Demon Hunter.
 	-- Other class's that use a speical language may change this in the future.
-	
+
 	-- check the player's class in order to get the correct class language.
 	local i = 0
 	if UnitClass("player") == "Demon Hunter" then
@@ -557,7 +557,7 @@ function SpeakinSpell:GetClassLanguage()
 		-- if the player doesn't have a class language, fall back to common
 		i = 1
 	end
-	
+
 	-- i and languageIndex are different
 	-- i is an index to this toon's known languages: 1 to GetNumLanguages()
 	-- languageIndex is a global index: 1 to the total available languages in the game right now
@@ -596,14 +596,14 @@ function SpeakinSpell:GetAddonMemoryUsedString()
 	-- start
 	local total = 0
 	local Report = L["Memory usage report\n"]
-   
+
    -- make sure we are not in combat or this will crash.
-   
+
    if UnitAffectingCombat("player") then
-   -- if we are in combat return a blank report and continue on. 
+   -- if we are in combat return a blank report and continue on.
       return Report;
    end
-   
+
 	-- list all the modules
 	for i,module in ipairs(MODULES) do
       UpdateAddOnMemoryUsage(module)
@@ -643,7 +643,7 @@ function SpeakinSpell:LoadChatColorCodes()
 		RAID_WARNING		= "|cffffdbad",
 		RAID_BOSS_WHISPER	= "",
 	}
-	
+
 	-- load the game's built-in channel colors from ChatTypeInfo
 	for channel,_ in pairs( SpeakinSpell.Colors.Channels ) do
 		local info = ChatTypeInfo[channel]
@@ -654,9 +654,9 @@ function SpeakinSpell:LoadChatColorCodes()
 			SpeakinSpell.Colors.Channels[channel] = string.format( "|c%02x%02x%02x%02x", 255*info.a, 255*info.r, 255*info.g, 255*info.b )
 		end
 	end
-	
+
 	-- create colors code strings for the SpeakinSpell-created special channels
-	if	SpeakinSpellSavedData and 
+	if	SpeakinSpellSavedData and
 		SpeakinSpellSavedData.Colors and
 		SpeakinSpellSavedData.Colors.Channels then
 		for channel,info in pairs( SpeakinSpellSavedData.Colors.Channels ) do
@@ -672,17 +672,17 @@ end
 
 function SpeakinSpell:StringColorCodeToTable(cc)
 	-- cc is a string color code "|caarrggbb" example: "|cff123456"
-	-- returns the color code as a table: t.a, t.r, t.g, t.b 
+	-- returns the color code as a table: t.a, t.r, t.g, t.b
 	-- using numbers in the format used by the color picker GUI controls and blizzard APIs
 	-- which is a floating point number 0-1 representing the fraction of intensity 0-255
-	
+
 	-- extract component colors from the string escape sequence format "|caarrggbb"
 	-- the "0x" is needed to make LUA interpret the string to number conversion correctly
 	local aa = "0x"..string.sub( cc, 3, 4 )
 	local rr = "0x"..string.sub( cc, 5, 6 )
 	local gg = "0x"..string.sub( cc, 7, 8 )
 	local bb = "0x"..string.sub( cc, 9, 11)
-	
+
 	-- convert string hex int "0xff" to floating point fraction or % of 0-255
 	-- and store results in a table
 	local t = {
@@ -691,7 +691,7 @@ function SpeakinSpell:StringColorCodeToTable(cc)
 		g = gg/255,
 		b = bb/255,
 	}
-	
+
 	return t
 end
 
@@ -727,8 +727,9 @@ end
 -- Search for the summoned companion pet (CritterOrMount="CRITTER") or mount (CritterOrMount="MOUNT")
 -- returns (name, spellID)
 function SpeakinSpell:GetActiveCompanion(CritterOrMount)
+	--[[ NOT IN CLASSIC
 	local funcname = "GetActiveCompanion"
-	
+
 	-- I can't find an API that returns the active companion's name directly
 	-- looks like the only way is to iterate through all known critters to find the one that's summoned, if any
 	self:DebugMsg(funcname, "CritterOrMount="..tostring(CritterOrMount))
@@ -758,13 +759,14 @@ function SpeakinSpell:GetActiveCompanion(CritterOrMount)
 			end
 		end
 	else
-		-- during login (but not reloadui) 
+		-- during login (but not reloadui)
 		-- we sometimes get a COMPANION_UPDATE with an invalid CritterOrMount value
 		self:DebugMsg(funcname, "error invalid CritterOrMount="..tostring(CritterOrMount))
 	end
 
 	-- none of the known companion pets are currently summoned
 	self:DebugMsg(funcname, "failed")
+	--]]
 	return nil, nil
 end
 
@@ -788,7 +790,7 @@ function SpeakinSpell:DetermineMountClass( tooltip )
 	if not tooltip then
 		return "/ss macro mount" -- generic any mount
 	end
-	
+
 	-- this if-else logic was borrowed from Mountiful
 	-- code style and actions taken have been changed for SpeakinSpell purposes
 	if ( string.find(tooltip, L["swimmer"]) ) then
@@ -836,7 +838,7 @@ local function RunSlashCmd(cmd)
      local slashCmd
      repeat
         slashCmd = _G["SLASH_"..name..i]
-        
+
         if slashCmd == slash then
            -- Call the handler
            SlashCmdList[name](rest)
@@ -845,7 +847,7 @@ local function RunSlashCmd(cmd)
         i = i + 1
      until not slashCmd
   end
-end 
+end
 
 The problem is, that method doesn't work with emotes
 There's an equivalent algorithm that ONLY works with emotes
@@ -870,7 +872,7 @@ most solutions I find (on wowwiki) only handle 1 of those, but not the others
 	but that's impossible based on guessing, without access to the source
 	which is in the private code.
 	I found an imperfect work-around below
-	
+
 	-- create a hidden edit box to parse and send the slash command
 	if not SpeakinSpellTempEditBox then
 		self:DebugMsg(funcname, "creating SpeakinSpellTempEditBox")
@@ -931,8 +933,8 @@ the user *could* be typing a message into ChatFrame2EditBox (combat log window)
 which would get blown away by using it for our RunSlashCommand function
 --]]
 
---[[ 
---in 3.3.5 the following function requires a fragment of XML 
+--[[
+--in 3.3.5 the following function requires a fragment of XML
 --to fix initialization of the EditBox object
 see frames.xml
 	<EditBox name="SpeakinSpellEditBoxTemplate" inherits="ChatFrameEditBoxTemplate" virtual="true">
@@ -967,7 +969,7 @@ Message: ..\FrameXML\ChatFrame.lua line 3779:
 
 The related line of code in ChatFrame.lua is:
 	local headerWidth = header:GetRight() - header:GetLeft();
-	
+
 Apparently "header" is non-nil, but GetRight and/or GetLeft are returning nil instead of 0
 Grr @ Blizzard for that...
 --]]
@@ -991,16 +993,16 @@ function SpeakinSpell:RunSlashCommand(text)
 	if ( strsub(text, 1, 1) ~= "/" ) then
 		return false
 	end
-	
+
 	-- wait to create the SpeakinSpellChatEditBox until the first time we need it
 	if not SpeakinSpell.SpeakinSpellChatEditBox then
 		--SpeakinSpell.SpeakinSpellChatEditBox = CreateFrame("EditBox", "SpeakinSpellChatEditBox", UIParent, "SpeakinSpellEditBoxTemplate")
 		SpeakinSpell.SpeakinSpellChatEditBox = ChatFrame2EditBox --HACK!
 	end
-	
-	-- OK to send the command	
+
+	-- OK to send the command
 	self:DebugMsg(funcname,"passing to SpeakinSpellChatEditBox: " .. tostring(text) )
-	SpeakinSpell.SpeakinSpellChatEditBox:SetText(text) 
+	SpeakinSpell.SpeakinSpellChatEditBox:SetText(text)
 	ChatEdit_SendText(SpeakinSpell.SpeakinSpellChatEditBox)
 
 	self:DebugMsg(funcname,"success" )
@@ -1018,7 +1020,7 @@ Adapted from http://www.wowwiki.com/RunSlashCmd
 Duerma's list of chat commands to look for:
 	SLASH_BATTLEGROUND1, SLASH_BATTLEGROUND2, SLASH_BATTLEGROUND3, SLASH_BATTLEGROUND4, SLASH_CHANNEL1, SLASH_CHANNEL2, SLASH_CHANNEL3, SLASH_CHANNEL4, SLASH_EMOTE1, SLASH_EMOTE2, SLASH_EMOTE3, SLASH_EMOTE4, SLASH_EMOTE5, SLASH_EMOTE6, SLASH_EMOTE7, SLASH_EMOTE8, SLASH_FOLLOW1, SLASH_FOLLOW2, SLASH_FOLLOW3, SLASH_FOLLOW4, SLASH_FOLLOW5, SLASH_FOLLOW6, SLASH_FOLLOW7, SLASH_GUILD1, SLASH_GUILD2, SLASH_GUILD3, SLASH_GUILD4, SLASH_GUILD5, SLASH_GUILD6, SLASH_GUILD7, SLASH_GUILD8, SLASH_GUILD9, SLASH_OFFICER1, SLASH_OFFICER2, SLASH_OFFICER3, SLASH_OFFICER4, SLASH_OFFICER5, SLASH_OFFICER6, SLASH_PARTY1, SLASH_PARTY2, SLASH_PARTY3, SLASH_PARTY4, SLASH_PARTY5, SLASH_RAID1, SLASH_RAID2, SLASH_RAID3, SLASH_RAID4, SLASH_RAID5, SLASH_RAID6, SLASH_RAID_WARNING1, SLASH_RAID_WARNING2, SLASH_SAY1, SLASH_SAY2, SLASH_SAY3, SLASH_SAY4, SLASH_YELL1, SLASH_YELL2, SLASH_YELL3, SLASH_YELL4, SLASH_YELL5, SLASH_YELL6, SLASH_YELL7, SLASH_YELL8, "/in"
 	In English, there are twice as many commands as needed, but in other languages this is not the case.
-	Everything not a slash command and not /ss can be passed through DoEmote. 
+	Everything not a slash command and not /ss can be passed through DoEmote.
 	If it's a real emote, it will fire. If not, it will fail silently,
 	see CHAT_CHANNEL_SELECTORS table below
 
@@ -1049,12 +1051,12 @@ local CHAT_CHANNEL_SELECTORS = {
 	[SLASH_EMOTE8] = "EMOTE",
 	--[ [ /follow is not a chat channel selector, it should be detected in the SlashCmdList
 	[SLASH_FOLLOW1] = "/follow",
-	[SLASH_FOLLOW2, 
-	[SLASH_FOLLOW3, 
-	[SLASH_FOLLOW4, 
-	[SLASH_FOLLOW5, 
-	[SLASH_FOLLOW6, 
-	[SLASH_FOLLOW7, 
+	[SLASH_FOLLOW2,
+	[SLASH_FOLLOW3,
+	[SLASH_FOLLOW4,
+	[SLASH_FOLLOW5,
+	[SLASH_FOLLOW6,
+	[SLASH_FOLLOW7,
 	--] ]
 	[SLASH_GUILD1] = "GUILD",
 	[SLASH_GUILD2] = "GUILD",
@@ -1120,7 +1122,7 @@ local CHAT_CHANNEL_SELECTORS = {
 	--		/join mychannel = [5. mychannel]
 	--		"/c 5 test" works
 	--		"/c mychannel test" fails silently within SpeakinSpell
-	--		If I type into the chat frame, as I hit the space after "/c mychannel" it changes my chat input box immediately, 
+	--		If I type into the chat frame, as I hit the space after "/c mychannel" it changes my chat input box immediately,
 	--		before I finish typing the message, and I think that's why it doesn't work here
 	--		when that becomes SendChatMessage(message, "CHANNEL", nil, "mychannel")
 	--		which could also explain why "/c" is coming up in the SlashCmdList below
@@ -1162,7 +1164,7 @@ local CHAT_CHANNEL_SELECTORS = {
 		func(rest)
 		return true;
 	end
-	
+
 	-- search the registered slash commands list the slow way
 	-- this should include "/help" and "/addon" commands
 	-- for sample code, see ChatFrame.lua function ChatEdit_ParseText
@@ -1183,7 +1185,7 @@ local CHAT_CHANNEL_SELECTORS = {
 		until not slashCmd
 	end
 	--] ]
-	
+
 	-- Okay, so it's not a slash command. It may also be an emote.
 	i = 1
 	while _G["EMOTE" .. i .. "_TOKEN"] do
@@ -1198,7 +1200,7 @@ local CHAT_CHANNEL_SELECTORS = {
 		end
 		i = i + 1
 	end
-	
+
 	-- Okay, so it's not a slash command, or an emote
 	-- it could be a chat channel selector like /say or /party
 	-- we define CHAT_CHANNEL_SELECTORS above, using all possible localized prefixes, i.e. /y vs. /yell
@@ -1208,7 +1210,7 @@ local CHAT_CHANNEL_SELECTORS = {
 		SendChatMessage(rest, channel)
 		return true
 	end
-	
+
 	-- Whispers (/t) are a little more complicated because we have to parse out the target name
 	i = 1
 	while _G["SLASH_WHISPER"..i] do
@@ -1220,7 +1222,7 @@ local CHAT_CHANNEL_SELECTORS = {
 		end
 		i = i + 1
 	end
-	
+
 	-- Okay, it's not a slash command that we could find
 	self:DebugMsg(funcname, "failed for text: "..tostring(text))
 	return false
