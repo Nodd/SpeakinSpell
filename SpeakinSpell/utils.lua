@@ -367,6 +367,7 @@ function SpeakinSpell:IsInWorldPVPBattle()
 	-- we only care if a battle is in progress
 	-- if we're in WG for VOA PVE and the battle is over, switch to raid settings
 	-- same for Tol Barad, and as of WoW 4.0.6, they share the same API: GetWorldPVPAreaInfo
+	--[[  -- NOT IN CLASSIC
 	local zoneID = 1
 	for zoneID = 1, GetNumWorldPVPAreas() do
 		local pvpID, localizedName, isActive, canQueue, startTime, canEnter = GetWorldPVPAreaInfo(zoneID)
@@ -374,6 +375,7 @@ function SpeakinSpell:IsInWorldPVPBattle()
 			return true
 		end
 	end
+	--]]
 	-- either none of the battles are in progress, or you aren't there
 	return false
 end
